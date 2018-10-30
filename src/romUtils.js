@@ -27,13 +27,13 @@ const padRom = (romData, padding) => {
 
 
 const loadRom = fileName => {
-	const raw = fs.readFileSync(fs.openSync(fileName, 'r'));
-	const parsed = parseRom(raw);
-}
+  const raw = fs.readFileSync(fs.openSync(fileName, 'r'));
+  const parsed = parseRom(raw);
+};
 
 module.exports = {
   parseRom,
   printRom,
   padRom,
   loadRom,
-}
+};

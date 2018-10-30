@@ -1,4 +1,4 @@
-const DEBUG = !true;
+const DEBUG = true;
 module.exports = {
   DEBUG,
 };

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const logger = require('./logger');
+const { log } = require('./logger');
 
 const parseRom = data => {
   const d = data.toString('hex');
@@ -21,14 +21,12 @@ const printRom = (rom, init = 0) => {
   }
 };
 
-const padRom = (romData, padding) => {
-  return Array(padding).fill(0).concat(romData);
-};
+const padRom = (romData, padding) => Array(padding).fill(0).concat(romData);
 
 
 const loadRom = fileName => {
   const raw = fs.readFileSync(fs.openSync(fileName, 'r'));
-  const parsed = parseRom(raw);
+  return parseRom(raw);
 };
 
 module.exports = {

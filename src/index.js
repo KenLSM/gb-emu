@@ -41,6 +41,8 @@ class State {
     this.xor = this.xor.bind(this);
 
     this.readF = this.readF.bind(this);
+    this.readFByOpCode = this.readFByOpCode.bind(this);
+
     this.setSP = this.setSP.bind(this);
     this.addSP = this.addSP.bind(this);
 
@@ -71,15 +73,34 @@ class State {
       case 'C':
         return this.F & 0x10;
       default:
-        return 0;
+        err('Unknown readF:', symbol);
+        throw new Error();
+    }
+  }
+
+  readFByOpCode(opCode) {
+    switch (opCode) {
+      case 0x20:
+      case 0xC2:
+        return !this.readF('Z');
+      case 0xCA:
+      case 0x28:
+        return this.readF('Z');
+      case 0x30:
+      case 0xD2:
+        return !this.readF('C');
+      case 0x38:
+      case 0xDA:
+        return this.readF('C');
+      default:
+        err('Unknown readFByOpCode:', opCode.toString(16));
+        throw new Error();
     }
   }
 
   setSP(val) {
-    console.log(val, this.SP);
     this.SP = val;
     this.SP &= 0xFFFF;
-    console.log(val, this.SP);
   }
 
   addSP(val) {
@@ -94,7 +115,7 @@ class State {
 
   addPC(val) {
     this.PC += val;
-    log(this.PC);
+    log('ADD PC:', val, 'CUR_PC:', this.PC.toString(16));
     this.PC &= 0xFFFF;
   }
 
@@ -122,9 +143,9 @@ const gameloop = state => {
     setPC,
     xor,
   } = state;
-  const inst = memory[PC];
-  log('INST:', inst.toString(16));
-  switch (inst) {
+  const opCode = memory[PC];
+  log(`PC: 0x${PC.toString(16).padStart(4, 0)} OPCODE: ${opCode.toString(16)}`);
+  switch (opCode) {
     case 0x05: // DEC B
       state.B = (state.B - 1) && 0xFF;
       addPC(1);
@@ -134,22 +155,51 @@ const gameloop = state => {
       memory[state.PC + 1] = state.SP & 0x00FF;
       addPC(3);
       break;
-    case 0x22: // LD [HL+], A
+    case 0x20: // JR NZ, r
       {
-        const HL = unsigned16(state.H, state.L);
+        const r = memory[PC + 1];
+        log('R', r.toString(16), PC.toString(16));
+        addPC(2);
+        if (state.readFByOpCode(opCode)) {
+          addPC(r);
+        }
+      }
+      break;
+    case 0x21: // LD HL, nn
+      {
+        const nn = unsigned16(memory[PC + 2], memory[PC + 1]);
+        state.H = nn & 0xFF00;
+        state.L = nn & 0x00FF;
+        addPC(3);
+      }
+      break;
+    case 0x22: // LD [HL+], A
+    case 0x32: // LD [HL-], A
+      {
+        let HL = unsigned16(state.H, state.L);
         memory[HL] = state.A;
+        HL += opCode === 0x22 ? 1 : -1;
+        state.H = HL & 0xFF00;
+        state.L = HL & 0x00FF;
+        addPC(1);
+      }
+      break;
+    case 0x23: // INC HL
+      {
+        const HL = unsigned16(state.H, state.L) + 1;
         state.H = (HL + 1) & 0xFF00;
         state.L = (HL + 1) & 0x00FF;
         addPC(1);
       }
       break;
     case 0x31:
-      setSP(unsigned16(memory[PC + 1], memory[PC + 2]));
+      setSP(unsigned16(memory[PC + 2], memory[PC + 1]));
       addPC(3);
       break;
     case 0xAF:
-      xor('A', memory[PC + 1]);
-      addPC(2);
+      xor('A', state.A);
+      log('XOR A with A');
+      addPC(1);
       break;
 
     case 0xC7:
@@ -163,10 +213,17 @@ const gameloop = state => {
       memory[state.SP - 1] = PC & 0xFF00;
       memory[state.SP - 2] = PC & 0x00FF;
       addSP(-2);
-      setPC(RST_ADDRESS[inst]);
+      setPC(RST_ADDRESS[opCode]);
+      break;
+    case 0xCB: // Bit Operations
+      {
+        const nextOp = memory[PC + 1];
+        console.log(nextOp.toString(16));
+        throw new Error();
+      }
       break;
     default:
-      err('\n\nUnhandled instruction:', inst.toString(16));
+      err('\n\nUnhandled OpCode:', opCode.toString(16));
       throw new Error();
   }
 };

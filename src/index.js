@@ -2,6 +2,12 @@ const CONST = require('./constants');
 const RomUtils = require('./romUtils');
 const MemUtils = require('./memUtils');
 const KeyUtils = require('./keypressUtils');
+const { CB } = require('./CBOps');
+const {
+  State,
+  u16,
+  signed8,
+} = require('./state');
 
 const { err, log } = require('./logger');
 
@@ -23,116 +29,7 @@ const RST_ADDRESS = {
   0xFF: 0x38,
 };
 
-class State {
-  constructor() {
-    this.PC = 0; // Program Counter: 16 bit
-    this.SP = 0; // Stack Pointer: 16 bit
-
-    // flags
-    this.A = 0; // 8 bit
-    this.B = 0; // 8 bit
-    this.C = 0; // 8 bit
-    this.D = 0; // 8 bit
-    this.E = 0; // 8 bit
-    this.F = 0; // F CPU flags,
-    this.H = 0; // 8 bit
-    this.L = 0; // 8 bit
-
-    this.xor = this.xor.bind(this);
-
-    this.readF = this.readF.bind(this);
-    this.readFByOpCode = this.readFByOpCode.bind(this);
-
-    this.setSP = this.setSP.bind(this);
-    this.addSP = this.addSP.bind(this);
-
-    this.setPC = this.setPC.bind(this);
-    this.addPC = this.addPC.bind(this);
-  }
-
-  xor(symbol, source) {
-    switch (symbol) {
-      case 'A':
-        this.A ^= source;
-        this.A &= 0xFF;
-        break;
-      default:
-        err('Unexpected symbol:', symbol);
-        throw new Error();
-    }
-  }
-
-  readF(symbol) {
-    switch (symbol) {
-      case 'Z':
-        return this.F & 0x80;
-      case 'N':
-        return this.F & 0x40;
-      case 'H':
-        return this.F & 0x20;
-      case 'C':
-        return this.F & 0x10;
-      default:
-        err('Unknown readF:', symbol);
-        throw new Error();
-    }
-  }
-
-  readFByOpCode(opCode) {
-    switch (opCode) {
-      case 0x20:
-      case 0xC2:
-        return !this.readF('Z');
-      case 0xCA:
-      case 0x28:
-        return this.readF('Z');
-      case 0x30:
-      case 0xD2:
-        return !this.readF('C');
-      case 0x38:
-      case 0xDA:
-        return this.readF('C');
-      default:
-        err('Unknown readFByOpCode:', opCode.toString(16));
-        throw new Error();
-    }
-  }
-
-  setSP(val) {
-    this.SP = val;
-    this.SP &= 0xFFFF;
-  }
-
-  addSP(val) {
-    this.SP += val;
-    this.SP &= 0xFFFF;
-  }
-
-  setPC(val) {
-    this.PC = val;
-    this.PC &= 0xFFFF;
-  }
-
-  addPC(val) {
-    this.PC += val;
-    log('ADD PC:', val, 'CUR_PC:', this.PC.toString(16));
-    this.PC &= 0xFFFF;
-  }
-
-  toString() {
-    const obj = Object.assign({}, this);
-    for (const k in obj) {
-      if (typeof obj[k] === 'function') {
-        delete obj[k];
-      }
-    }
-    return obj;
-  }
-}
-
 const systemState = new State();
-
-const unsigned16 = (b1, b2) => (b1 << 8) + b2;
 
 const gameloop = state => {
   const {
@@ -157,43 +54,44 @@ const gameloop = state => {
       break;
     case 0x20: // JR NZ, r
       {
-        const r = memory[PC + 1];
-        log('R', r.toString(16), PC.toString(16));
-        addPC(2);
+        const r = signed8(memory[PC + 1]);
+        log('JR NZ, r');
+        log('R', r.toString(16), PC.toString(16), memory[PC + 1].toString(16));
         if (state.readFByOpCode(opCode)) {
+          log('JR NZ WILL JUMP');
           addPC(r);
         }
+        addPC(2);
       }
       break;
     case 0x21: // LD HL, nn
       {
-        const nn = unsigned16(memory[PC + 2], memory[PC + 1]);
-        state.H = nn & 0xFF00;
-        state.L = nn & 0x00FF;
+        log('PRE LD MEM', memory[PC + 2], memory[PC + 1]);
+        const nn = u16(memory[PC + 2], memory[PC + 1]);
+        state.setRegister('HL', nn);
         addPC(3);
       }
       break;
     case 0x22: // LD [HL+], A
     case 0x32: // LD [HL-], A
       {
-        let HL = unsigned16(state.H, state.L);
+        let HL = u16(state.H, state.L);
         memory[HL] = state.A;
         HL += opCode === 0x22 ? 1 : -1;
-        state.H = HL & 0xFF00;
-        state.L = HL & 0x00FF;
+        state.setRegister('HL', HL);
+        log('LD [HL+-]', HL);
         addPC(1);
       }
       break;
     case 0x23: // INC HL
       {
-        const HL = unsigned16(state.H, state.L) + 1;
-        state.H = (HL + 1) & 0xFF00;
-        state.L = (HL + 1) & 0x00FF;
+        const HL = u16(state.H, state.L) + 1;
+        state.setRegister('HL', HL);
         addPC(1);
       }
       break;
     case 0x31:
-      setSP(unsigned16(memory[PC + 2], memory[PC + 1]));
+      setSP(u16(memory[PC + 2], memory[PC + 1]));
       addPC(3);
       break;
     case 0xAF:
@@ -216,11 +114,9 @@ const gameloop = state => {
       setPC(RST_ADDRESS[opCode]);
       break;
     case 0xCB: // Bit Operations
-      {
-        const nextOp = memory[PC + 1];
-        console.log(nextOp.toString(16));
-        throw new Error();
-      }
+      CB(memory[PC + 1], state);
+      log('CB', memory[PC + 1].toString(16));
+      addPC(2);
       break;
     default:
       err('\n\nUnhandled OpCode:', opCode.toString(16));
@@ -237,15 +133,33 @@ const stepper = async state => {
 };
 
 let delay = 1;
+let cycles = 0;
+const FREQ = 4 * 1000 * 1000;
+const M_SECOND = 1;
+const SECOND = M_SECOND * 1000;
 
+const M_FREQ = FREQ / SECOND;
+
+let start = new Date().getTime();
 const main = async () => {
   while (keyPressed[1]) {
-    const start = new Date().getTime();
-    await new Promise(p => setTimeout(p, delay)); // eslint-disable-line
-    await gameloop(systemState);
+    cycles += 1;
+
+    // This is pause is required to allow keyboard event loop to have a chance of executing
+    // However, this will add an additional 16ms of delay per pause
+    if (cycles % M_FREQ === 0) {
+      const now = new Date().getTime();
+      // 8 MHZ
+      delay = M_SECOND - (now - start);
+      err('Delay value', delay);
+
+      // setTimeout will cause the process to skip
+      await new Promise(p => setTimeout(p, delay)); // eslint-disable-line
+      start = now;
+    }
+
+    gameloop(systemState);
     // await stepper(systemState);
-    // log((new Date().getTime() - start));
-    delay = 16 - (new Date().getTime() - start); // 60 fps
   }
   log('\n\nHalted:', systemState.toString());
 };

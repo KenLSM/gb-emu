@@ -1,0 +1,7 @@
+{
+  "all":
+  {
+    "indent_size": 2,
+    "end_with_newline": true, // End output with newline
+  }
+}

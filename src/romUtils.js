@@ -4,7 +4,7 @@ const { log } = require('./logger');
 const parseRom = data => {
   const d = data.toString('hex');
   const ret = [];
-  for (let i = 0; i < data.length; i += 2) {
+  for (let i = 0; i < d.length; i += 2) {
     ret.push(parseInt(d.slice(i, i + 2), 16));
   }
   return ret;

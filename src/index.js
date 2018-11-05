@@ -21,10 +21,18 @@ KeyUtils.handleKeyPress(keyPressed);
 
 const memory = RomUtils.loadRom(ROM_FILE);
 
+const CELA_TABLE = {
+  4: 'C',
+  5: 'E',
+  6: 'L',
+  7: 'A',
+};
+
 const BC_DE_HL_TABLE = {
   0: 'BC',
   1: 'DE',
   2: 'HL',
+  3: 'AF',
 };
 
 const BCDEHLA_TABLE = {
@@ -62,6 +70,49 @@ const gameloop = state => {
   const opCode = memory[PC];
   log(`PC: 0x${PC.toString(16).padStart(4, 0)} OPCODE: ${opCode.toString(16)}`);
   switch (opCode) {
+    // Stack Push/pop
+    case 0xC5: // PUSH BC
+    case 0xD5: // PUSH DE
+    case 0xE5: // PUSH HL
+    case 0xF5: // PUSH AF
+      {
+        const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
+        const [H, L] = u16Tou8(state.getRegister(r16));
+        addSP(-2);
+        memory[state.SP - 1] = H;
+        memory[state.SP - 2] = L;
+        addPC(1);
+      }
+      break;
+
+    case 0xC1: // POP BC
+    case 0xD1: // POP DE
+    case 0xE1: // POP HL
+    case 0xF1: // POP AF
+      {
+        const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
+        const H = memory[state.SP - 1];
+        const L = memory[state.SP - 2];
+        addSP(2);
+        const HL = u16Tou8(H, L);
+        state.setRegister(r16, HL);
+        addPC(1);
+      }
+      break;
+
+
+      // LD r8(CELA), A
+    case 0x4F: // LD C, A
+    case 0x5F: // LD E, A
+    case 0x6F: // LD L, A
+    case 0x7F: // LD A, A
+      {
+        const r8 = CELA_TABLE[opCode >> 4];
+        state.setRegister(r8, state.A);
+        addPC(1);
+      }
+      break;
+
     case 0x08: // LD (nn), SP
       {
         const [H, L] = u16Tou8(state.SP);
@@ -83,7 +134,12 @@ const gameloop = state => {
         const register = BCDEHLA_TABLE[opCode];
         // TODO: might have overflow/flags
         const v = state.getRegister(register) + 1;
+
         state.setRegister(register, v);
+        state.setFlag('Z', !v);
+        state.setFlag('N', 0);
+        state.setFlag('H', 0);
+
         addPC(1);
       }
       break;
@@ -100,6 +156,11 @@ const gameloop = state => {
         // TODO: might have overflow/flags
         const v = state.getRegister(register) - 1;
         state.setRegister(register, v);
+
+        state.setFlag('Z', !v);
+        state.setFlag('N', 0);
+        state.setFlag('H', 0);
+
         addPC(1);
       }
       break;
@@ -145,6 +206,14 @@ const gameloop = state => {
       addPC(3);
       break;
 
+    case 0x1a: // LD A, (BC)
+    case 0x2a: // LD A, (DE)
+      {
+        const r16 = BC_DE_HL_TABLE[opCode >> 4]; // check UU
+        state.setRegister('A', memory[r16]);
+        addPC(1);
+      }
+      break;
 
     case 0x20: // JR NZ, r
     case 0xC2:
@@ -166,14 +235,6 @@ const gameloop = state => {
       }
       break;
 
-    case 0x21: // LD HL, nn
-      {
-        log('PRE LD MEM', memory[PC + 2], memory[PC + 1]);
-        const nn = u16(memory[PC + 2], memory[PC + 1]);
-        state.setRegister('HL', nn);
-        addPC(3);
-      }
-      break;
     case 0x22: // LD [HL+], A
     case 0x32: // LD [HL-], A
       {
@@ -216,9 +277,9 @@ const gameloop = state => {
     case 0xFF:
       {
         const [H, L] = u16Tou8(PC);
+        addSP(-2);
         memory[state.SP - 1] = H;
         memory[state.SP - 2] = L;
-        addSP(-2);
         setPC(RST_ADDRESS[opCode]);
       }
       break;
@@ -246,12 +307,38 @@ const gameloop = state => {
       state.A = memory[0xFF00 + state.C];
       addPC(1);
       break;
+
+
     case 0xCB: // Bit Operations
       CB(memory[PC + 1], state);
-      log('CB', memory[PC + 1].toString(16));
       addPC(2);
       break;
 
+    case 0x17: // RLA
+      {
+        const C = Number((state.A & 0x80) === 0x80);
+        state.setRegister('A', (state.A << 1) | state.readF('C'));
+        state.setFlag('Z', 0);
+        state.setFlag('Z', !state.getRegister(r8));
+        state.setFlag('N', 0);
+        state.setFlag('H', 0);
+        state.setFlag('C', C);
+
+        // state.setFlag('Z', !state.getRegister(r8));
+        addPC(1);
+      }
+      break;
+
+    case 0xCD: // Call nn
+      {
+        const nn = u16(memory[PC + 2], memory[PC + 1]);
+        const [H, L] = u16Tou8(PC);
+        addSP(-2);
+        memory[state.SP - 1] = H;
+        memory[state.SP - 2] = L;
+        setPC(nn);
+      }
+      break;
 
     default:
       err('\n\nUnhandled OpCode:', opCode.toString(16));
@@ -277,7 +364,7 @@ const M_FREQ = FREQ / SECOND;
 
 let start = new Date().getTime();
 const main = async () => {
-  SaveLoadUtils.load('1541406227919.log', memory, systemState);
+  SaveLoadUtils.load('1541412273794.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
@@ -295,7 +382,7 @@ const main = async () => {
     }
 
     gameloop(systemState);
-    // await stepper(systemState);
+    await stepper(systemState);
   }
   log('\n\nHalted:', systemState.toString());
 };
@@ -306,7 +393,7 @@ main()
     err('\n\nSTATE DUMP:', systemState.toString());
     err(e);
     const fName = `${new Date().getTime()}.log`;
-    SaveLoadUtils.save(fName, memory, systemState);
+    // SaveLoadUtils.save(fName, memory, systemState);
   })
   .finally(() => {
     console.log('Ended');

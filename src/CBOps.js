@@ -1,3 +1,6 @@
+const { err } = require('./logger');
+
+const BCDEHL_TABLE = ['B', 'C', 'D', 'E', 'H', 'L', 'HL', 'A'];
 const CBArray = ['B', 'C', 'D', 'E', 'H', 'L', 'HL', 'A'];
 const BitArray = [
   0x01, 0x02, 0x04, 0x08,
@@ -58,9 +61,21 @@ const CB = (opCode, state) => {
   // console.log('opCode', opCode.toString(16));
   // console.log('uull', uull.toString(2));
   switch (UU) {
-    case 0x0:
+    case 0x0: // UU == 0 - 3
+      if ([0x11, 0x12, 0x13, 0x14, 0x15, 0x17].includes(opCode)) { // 0x16 is (HL)
+        const r8 = BCDEHL_TABLE[opCode - 0x11];
+        const C = Number((state[r8] & 0x80) === 0x80);
+        state.setRegister(r8, (state.getRegister(r8) << 1) | state.readF('C'));
+        console.log('r8', r8, !state.getRegister(r8));
+        state.setFlag('Z', !state.getRegister(r8));
+        state.setFlag('N', 0);
+        state.setFlag('H', 0);
+        state.setFlag('C', C);
+        return state.getRegister(r8);
+      }
+      err('Unimplemented sub CB opCode', opCode.toString(16));
       throw new Error();
-    case 0x1: // BIT-READ
+    case 0x1: // BIT-READ // UU == 4-7
       {
         const result = readBit(getOperatedBit(LL, uu), getRegister(uull), state);
         state.setFlag('Z', !result);
@@ -68,16 +83,17 @@ const CB = (opCode, state) => {
         state.setFlag('H', 1);
         return result;
       }
+      break;
 
 
-    case 0x2: // BIT-RESET
+    case 0x2: // BIT-RESET // UU == 8-11
 
       // console.log('getOperatedBit', getOperatedBit(LL, uu));
       // console.log('uull', uull);
       // console.log('getRegister', getRegister(uull));
       // console.log(getOperatedBit(LL, uu));
       return resetBit(getOperatedBit(LL, uu), getRegister(uull), state);
-    case 0x3: // BIT-SET
+    case 0x3: // BIT-SET // UU == 12-15
       // console.log('getOperatedBit', getOperatedBit(LL, uu));
       // console.log('uull', uull);
       // console.log('getRegister', getRegister(uull));

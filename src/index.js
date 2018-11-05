@@ -1,6 +1,8 @@
 const CONST = require('./constants');
 const RomUtils = require('./romUtils');
 const MemUtils = require('./memUtils');
+const SaveLoadUtils = require('./slUtils');
+
 const KeyUtils = require('./keypressUtils');
 const { CB } = require('./CBOps');
 const {
@@ -18,6 +20,12 @@ const keyPressed = [null, true];
 KeyUtils.handleKeyPress(keyPressed);
 
 const memory = RomUtils.loadRom(ROM_FILE);
+
+const BC_DE_HL_TABLE = {
+  0: 'BC',
+  1: 'DE',
+  2: 'HL',
+};
 
 const BCDEHLA_TABLE = {
   0x04: 'B',
@@ -119,6 +127,25 @@ const gameloop = state => {
         addPC(2);
       }
       break;
+
+      // LD R16, nn
+    case 0x01: // LD BC, nn
+    case 0x11: // LD DE, nn
+    case 0x21: // LD HL, nn
+      {
+        const r16 = BC_DE_HL_TABLE[opCode >> 4]; // check UU
+        const nn = u16(memory[PC + 2], memory[PC + 1]);
+        state.setRegister(r16, nn);
+        addPC(3);
+      }
+      break;
+
+    case 0x31: // LD SP, nn
+      setSP(u16(memory[PC + 2], memory[PC + 1]));
+      addPC(3);
+      break;
+
+
     case 0x20: // JR NZ, r
     case 0xC2:
     case 0xCA:
@@ -138,6 +165,7 @@ const gameloop = state => {
         addPC(2);
       }
       break;
+
     case 0x21: // LD HL, nn
       {
         log('PRE LD MEM', memory[PC + 2], memory[PC + 1]);
@@ -164,9 +192,13 @@ const gameloop = state => {
         addPC(1);
       }
       break;
-    case 0x31: // LD SP, nn
-      setSP(u16(memory[PC + 2], memory[PC + 1]));
-      addPC(3);
+
+    case 0x77: // LD (HL),A
+      {
+        const HL = state.getRegister('HL');
+        memory[HL] = state.A;
+      }
+      addPC(1);
       break;
     case 0xAF:
       xor('A', state.A);
@@ -191,8 +223,27 @@ const gameloop = state => {
       }
       break;
 
+      // Special LD
+    case 0xE0: // LDH (n), A i.e, // LD (0xFF00 + n), A
+      {
+        const n = memory[PC + 1];
+        memory[0xFF00 + n] = state.A;
+        addPC(2);
+      }
+      break;
+    case 0xF0: // LDH A,(n) i.e, // LD A, (0xFF00 + n)
+      {
+        const n = memory[PC + 1];
+        state.A = memory[0xFF00 + n];
+        addPC(2);
+      }
+      break;
     case 0xE2: // LD (0xFF00 + C), A
       memory[0xFF00 + state.C] = state.A;
+      addPC(1);
+      break;
+    case 0xF2: // LD  A, (0xFF00 + C)
+      state.A = memory[0xFF00 + state.C];
       addPC(1);
       break;
     case 0xCB: // Bit Operations
@@ -200,6 +251,7 @@ const gameloop = state => {
       log('CB', memory[PC + 1].toString(16));
       addPC(2);
       break;
+
 
     default:
       err('\n\nUnhandled OpCode:', opCode.toString(16));
@@ -225,11 +277,12 @@ const M_FREQ = FREQ / SECOND;
 
 let start = new Date().getTime();
 const main = async () => {
+  SaveLoadUtils.load('1541406227919.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
     // This is pause is required to allow keyboard event loop to have a chance of executing
-    // However, this will add an additional 16ms of delay per pause
+    // However, this will add an additional ~16ms of delay per pause
     if (cycles % M_FREQ === 0) {
       const now = new Date().getTime();
       // 8 MHZ
@@ -252,6 +305,8 @@ main()
     err('### Crashed ##');
     err('\n\nSTATE DUMP:', systemState.toString());
     err(e);
+    const fName = `${new Date().getTime()}.log`;
+    SaveLoadUtils.save(fName, memory, systemState);
   })
   .finally(() => {
     console.log('Ended');

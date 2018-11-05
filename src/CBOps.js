@@ -68,6 +68,8 @@ const CB = (opCode, state) => {
         state.setFlag('H', 1);
         return result;
       }
+
+
     case 0x2: // BIT-RESET
 
       // console.log('getOperatedBit', getOperatedBit(LL, uu));

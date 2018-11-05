@@ -119,17 +119,23 @@ class State {
   }
 
   getRegister(r) {
-    if (r === 'HL') {
-      return u16(this.H, this.L);
+    if (['HL', 'BC', 'DE'].includes(r)) {
+      const [left, right] = r.split('');
+      return u16(this[left], this[right]);
     }
     return this[r];
   }
 
   setRegister(r, v) {
-    if (r === 'HL') {
-      const [H, L] = u16Tou8(v & 0xFFFF);
-      this.H = H;
-      this.L = L;
+    if (['B', 'C', 'D', 'E', 'H', 'L', 'A', 'HL', 'BC', 'DE'].includes(r) === false) {
+      err('Attemping to set non-existing register on state', r, v);
+      throw new Error();
+    }
+    if (['HL', 'BC', 'DE'].includes(r)) {
+      const [left, right] = r.split('');
+      const [leftV, rightV] = u16Tou8(v & 0xFFFF);
+      this[left] = leftV;
+      this[right] = rightV;
       return this.getRegister(r);
     }
     this[r] = v & 0xFF;

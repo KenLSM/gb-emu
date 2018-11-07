@@ -4,7 +4,7 @@ const MemUtils = require('./memUtils');
 const SaveLoadUtils = require('./slUtils');
 
 const KeyUtils = require('./keypressUtils');
-const { CB } = require('./CBOps');
+const { CB, didHalfCarry } = require('./CBOps');
 const {
   State,
   u16,
@@ -132,13 +132,12 @@ const gameloop = state => {
     case 0x3C: // A
       {
         const register = BCDEHLA_TABLE[opCode];
-        // TODO: might have overflow/flags
         const v = state.getRegister(register) + 1;
 
-        state.setRegister(register, v);
         state.setFlag('Z', !v);
         state.setFlag('N', 0);
-        state.setFlag('H', 0);
+        state.setFlag('H', didHalfCarry(v, state.getRegister(register)));
+        state.setRegister(register, v);
 
         addPC(1);
       }
@@ -153,13 +152,12 @@ const gameloop = state => {
     case 0x3D: // A
       {
         const register = BCDEHLA_TABLE[opCode - 1];
-        // TODO: might have overflow/flags
         const v = state.getRegister(register) - 1;
-        state.setRegister(register, v);
 
         state.setFlag('Z', !v);
-        state.setFlag('N', 0);
-        state.setFlag('H', 0);
+        state.setFlag('N', 1);
+        state.setFlag('H', didHalfCarry(v, state.getRegister(register)));
+        state.setRegister(register, v);
 
         addPC(1);
       }
@@ -267,7 +265,7 @@ const gameloop = state => {
       addPC(1);
       break;
 
-    case 0xC7:
+    case 0xC7: // RST
     case 0xD7:
     case 0xE7:
     case 0xF7:
@@ -319,12 +317,10 @@ const gameloop = state => {
         const C = Number((state.A & 0x80) === 0x80);
         state.setRegister('A', (state.A << 1) | state.readF('C'));
         state.setFlag('Z', 0);
-        state.setFlag('Z', !state.getRegister(r8));
         state.setFlag('N', 0);
         state.setFlag('H', 0);
         state.setFlag('C', C);
 
-        // state.setFlag('Z', !state.getRegister(r8));
         addPC(1);
       }
       break;
@@ -382,7 +378,7 @@ const main = async () => {
     }
 
     gameloop(systemState);
-    await stepper(systemState);
+    // await stepper(systemState);
   }
   log('\n\nHalted:', systemState.toString());
 };

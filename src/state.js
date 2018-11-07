@@ -49,13 +49,13 @@ class State {
   readF(symbol) {
     switch (symbol) {
       case 'Z':
-        return this.F & 0x80;
+        return (this.F & 0x80) === 0x80;
       case 'N':
-        return this.F & 0x40;
+        return (this.F & 0x40) === 0x40;
       case 'H':
-        return this.F & 0x20;
+        return (this.F & 0x20) === 0x20;
       case 'C':
-        return this.F & 0x10;
+        return (this.F & 0x10) === 0x10;
       default:
         err('Unknown readF:', symbol);
         throw new Error();

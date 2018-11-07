@@ -26,6 +26,8 @@ const getBitNum = opCode => {
   };
 };
 
+const didHalfCarry = (b1, b2) => Number((b1 & 0xF) + (b2 & 0xF) > 0xF);
+
 const getOperatedBit = (LL, uu) => {
   const bit = (LL * 2) + (uu >> 1);
   // console.log('bit', bit, BitArray[bit].toString(2));
@@ -58,7 +60,7 @@ const setBit = (whichBit, register, state) => {
 // Main function
 const CB = (opCode, state) => {
   const { UU, LL, uull, uu } = getBitNum(opCode);
-  // console.log('opCode', opCode.toString(16));
+  console.log('CB opCode', opCode.toString(16));
   // console.log('uull', uull.toString(2));
   switch (UU) {
     case 0x0: // UU == 0 - 3
@@ -110,4 +112,5 @@ module.exports = {
   getOperatedBit,
   getRegister,
   readBit,
+  didHalfCarry,
 };

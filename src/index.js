@@ -69,6 +69,7 @@ const gameloop = state => {
   } = state;
   const opCode = memory[PC];
   log(`PC: 0x${PC.toString(16).padStart(4, 0)} OPCODE: ${opCode.toString(16)}`);
+
   switch (opCode) {
     // Stack Push/pop
     case 0xC5: // PUSH BC
@@ -78,9 +79,9 @@ const gameloop = state => {
       {
         const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
         const [H, L] = u16Tou8(state.getRegister(r16));
+        memory[state.SP - 0] = H;
+        memory[state.SP - 1] = L;
         addSP(-2);
-        memory[state.SP - 1] = H;
-        memory[state.SP - 2] = L;
         addPC(1);
       }
       break;
@@ -91,10 +92,12 @@ const gameloop = state => {
     case 0xF1: // POP AF
       {
         const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
-        const H = memory[state.SP - 1];
-        const L = memory[state.SP - 2];
         addSP(2);
-        const HL = u16Tou8(H, L);
+        const H = memory[state.SP - 0];
+        const L = memory[state.SP - 1];
+        const HL = u16(H, L);
+        const HL2 = u16(H, L);
+        console.log('POP', HL, HL2);
         state.setRegister(r16, HL);
         addPC(1);
       }
@@ -275,9 +278,9 @@ const gameloop = state => {
     case 0xFF:
       {
         const [H, L] = u16Tou8(PC);
+        memory[state.SP - 0] = H;
+        memory[state.SP - 1] = L;
         addSP(-2);
-        memory[state.SP - 1] = H;
-        memory[state.SP - 2] = L;
         setPC(RST_ADDRESS[opCode]);
       }
       break;
@@ -328,11 +331,22 @@ const gameloop = state => {
     case 0xCD: // Call nn
       {
         const nn = u16(memory[PC + 2], memory[PC + 1]);
-        const [H, L] = u16Tou8(PC);
+        addPC(3);
+        const [H, L] = u16Tou8(state.PC);
+        memory[state.SP - 0] = H;
+        memory[state.SP - 1] = L;
         addSP(-2);
-        memory[state.SP - 1] = H;
-        memory[state.SP - 2] = L;
         setPC(nn);
+      }
+      break;
+
+    case 0xC9: // RTN
+      {
+        addSP(2);
+        const H = memory[state.SP - 0];
+        const L = memory[state.SP - 1];
+        const HL = u16(H, L);
+        setPC(HL);
       }
       break;
 
@@ -360,7 +374,7 @@ const M_FREQ = FREQ / SECOND;
 
 let start = new Date().getTime();
 const main = async () => {
-  SaveLoadUtils.load('1541412273794.log', memory, systemState);
+  SaveLoadUtils.load('1541582678371.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 

@@ -5,6 +5,7 @@
   "author": "kenlsm <kenlsm@outlook.com>",
   "license": "MIT",
   "dependencies": {
+    "blessed": "^0.1.81",
     "chai": "^4.2.0",
     "nodemon": "^1.18.5"
   },

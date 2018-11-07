@@ -64,11 +64,14 @@ const CB = (opCode, state) => {
   // console.log('uull', uull.toString(2));
   switch (UU) {
     case 0x0: // UU == 0 - 3
-      if ([0x11, 0x12, 0x13, 0x14, 0x15, 0x17].includes(opCode)) { // 0x16 is (HL)
-        const r8 = BCDEHL_TABLE[opCode - 0x11];
-        const C = Number((state[r8] & 0x80) === 0x80);
-        state.setRegister(r8, (state.getRegister(r8) << 1) | state.readF('C'));
-        console.log('r8', r8, !state.getRegister(r8));
+      if ([0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x17].includes(opCode)) { // 0x16 is (HL) // RL r8
+        const r8 = BCDEHL_TABLE[opCode - 0x10];
+        const C = Number((state.getRegister(r8) & 0x80) === 0x80);
+        // console.log('Original r8', state.getRegister(r8).toString(2));
+        // console.log('C', C);
+        state.setRegister(r8, (state.getRegister(r8) << 1) | C);
+        // console.log('New r8', state.getRegister(r8).toString(2));
+        // console.log('Z', !state.getRegister(r8));
         state.setFlag('Z', !state.getRegister(r8));
         state.setFlag('N', 0);
         state.setFlag('H', 0);

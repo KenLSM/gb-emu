@@ -125,7 +125,7 @@ const gameloop = state => {
       }
       break;
 
-      // INC
+      // INC r8
     case 0x04: // B
     case 0x0C: // C
     case 0x14: // D
@@ -134,18 +134,18 @@ const gameloop = state => {
     case 0x2C: // L
     case 0x3C: // A
       {
-        const register = BCDEHLA_TABLE[opCode];
-        const v = state.getRegister(register) + 1;
+        const r8 = BCDEHLA_TABLE[opCode];
+        const v = state.getRegister(r8) + 1;
 
         state.setFlag('Z', !v);
         state.setFlag('N', 0);
-        state.setFlag('H', didHalfCarry(v, state.getRegister(register)));
-        state.setRegister(register, v);
+        state.setFlag('H', didHalfCarry(v, state.getRegister(r8)));
+        state.setRegister(r8, v);
 
         addPC(1);
       }
       break;
-      // DEC
+      // DEC r8
     case 0x05: // B
     case 0x0D: // C
     case 0x15: // D
@@ -154,18 +154,43 @@ const gameloop = state => {
     case 0x2D: // L
     case 0x3D: // A
       {
-        const register = BCDEHLA_TABLE[opCode - 1];
-        const v = state.getRegister(register) - 1;
+        const r8 = BCDEHLA_TABLE[opCode - 1];
+        const v = state.getRegister(r8) - 1;
 
         state.setFlag('Z', !v);
         state.setFlag('N', 1);
-        state.setFlag('H', didHalfCarry(v, state.getRegister(register)));
-        state.setRegister(register, v);
+        state.setFlag('H', didHalfCarry(v, state.getRegister(r8)));
+        state.setRegister(r8, v);
 
         addPC(1);
       }
       break;
 
+      // INC r18
+    case 0x03: // BC
+    case 0x13: // DE
+    case 0x23: // HL
+      {
+        const r16 = BC_DE_HL_TABLE[opCode >> 4]; // check UU
+        const v = state.getRegister(r16) + 1;
+        state.setRegister(r16, v);
+
+        addPC(1);
+      }
+      break;
+
+      // DEC r18
+    case 0x0B: // BC
+    case 0x1B: // DE
+    case 0x2B: // HL
+      {
+        const r16 = BC_DE_HL_TABLE[opCode >> 4]; // check UU
+        const v = r16 - 1;
+        state.setRegister(r16, v);
+
+        addPC(1);
+      }
+      break;
       // LD R, n
     case 0x06: // LD B, n
     case 0x0e: // LD C, n
@@ -176,8 +201,8 @@ const gameloop = state => {
     case 0x3e: // LD A, n
       {
         const n = memory[PC + 1];
-        const register = BCDEHLA_TABLE[opCode - 2];
-        state.setRegister(register, n);
+        const r8 = BCDEHLA_TABLE[opCode - 2];
+        state.setRegister(r8, n);
         addPC(2);
       }
       break;
@@ -247,13 +272,6 @@ const gameloop = state => {
         addPC(1);
       }
       break;
-    case 0x23: // INC HL
-      {
-        const HL = u16(state.H, state.L) + 1;
-        state.setRegister('HL', HL);
-        addPC(1);
-      }
-      break;
 
     case 0x77: // LD (HL),A
       {
@@ -282,6 +300,19 @@ const gameloop = state => {
         memory[state.SP - 1] = L;
         addSP(-2);
         setPC(RST_ADDRESS[opCode]);
+      }
+      break;
+
+      // LD ?, E
+    case 0x4B: // LD C, E
+    case 0x5B:
+    case 0x6B:
+    case 0x7B:
+      {
+        const dstR8 = CELA_TABLE[opCode >> 4]; // check UU
+        const srcR8 = 'E';
+        state.setRegister(dstR8, state.getRegister(srcR8));
+        addPC(1);
       }
       break;
 
@@ -348,6 +379,23 @@ const gameloop = state => {
         const HL = u16(H, L);
         setPC(HL);
       }
+      break;
+
+    case 0xFE: // CP n
+      {
+        const n = memory[PC + 1];
+        const A = state.getRegister('A');
+        const sub = A - n;
+        const C = sub < 0; // If n is larger than A, then it will have to borrow the bits from MSB
+        console.log('CP n', n.toString(16));
+        state.setFlag('Z', !sub);
+        state.setFlag('N', 1);
+        state.setFlag('H', didHalfCarry(n, A));
+        state.setFlag('C', C);
+
+        addPC(2);
+      }
+      // throw new Error();
       break;
 
     default:

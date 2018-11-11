@@ -7,6 +7,7 @@
   "dependencies": {
     "blessed": "^0.1.81",
     "chai": "^4.2.0",
+    "chalk": "^2.4.1",
     "drawille": "^1.1.0",
     "nodemon": "^1.18.5"
   },

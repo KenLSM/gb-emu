@@ -26,7 +26,6 @@ const getBitNum = opCode => {
   };
 };
 
-const didHalfCarry = (b1, b2) => Number((b1 & 0xF) + (b2 & 0xF) > 0xF);
 
 const getOperatedBit = (LL, uu) => {
   const bit = (LL * 2) + (uu >> 1);
@@ -115,5 +114,4 @@ module.exports = {
   getOperatedBit,
   getRegister,
   readBit,
-  didHalfCarry,
 };

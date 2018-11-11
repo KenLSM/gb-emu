@@ -1,8 +1,7 @@
-const { log, err } = require('./logger');
-const u16Tou8 = b16 => [b16 >> 8, b16 & 0xFF];
-const u16 = (b1, b2) => (b1 << 8) + b2;
-const signed8 = b1 => b1 << 24 >> 24;
+const util = require('util');
 
+const { log, err } = require('./logger');
+const { u16, u16Tou8 } = require('./bitUtils');
 
 class State {
   constructor() {
@@ -170,13 +169,10 @@ class State {
         delete obj[k];
       }
     }
-    return obj;
+    return util.inspect(obj, { colors: true, depth: null, breakLength: Infinity });
   }
 }
 
 module.exports = {
   State,
-  u16Tou8,
-  u16,
-  signed8,
 };

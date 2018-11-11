@@ -1,5 +1,10 @@
 const fs = require('fs');
-const { log } = require('./logger');
+const { log, err } = require('./logger');
+
+const VRAM_SIZE = 0x2000;
+const ERAM_SIZE = 0x2000;
+const RAM_SIZE = 0x2000;
+const FULL_MMU_SIZE = 0xFFFF;
 
 const parseRom = data => {
   const d = data.toString('hex');
@@ -23,15 +28,78 @@ const printRom = (rom, init = 0) => {
 
 const padRom = (romData, padding) => Array(padding).fill(0).concat(romData);
 
-
 const loadRom = fileName => {
-  const raw = fs.readFileSync(fs.openSync(fileName, 'r'));
+  console.log(fileName);
+  const fd = fs.openSync(fileName, 'r');
+  const raw = fs.readFileSync(fd);
+  fs.closeSync(fd);
   return parseRom(raw);
 };
 
-module.exports = {
-  parseRom,
-  printRom,
-  padRom,
-  loadRom,
-};
+class MMU {
+  constructor(bootstrapRomDir, gameRomDir) {
+    this.bootstrapRomDir = bootstrapRomDir;
+    this.gameRomDir = gameRomDir;
+    this.__bootstrapRom = loadRom(bootstrapRomDir);
+    this.__gameRom = loadRom(gameRomDir);
+    this.__systemRam = Array(0x8000).fill(0);
+    this.read = this.read.bind(this);
+    this.write = this.write.bind(this);
+  }
+
+  load({ bootstrapRomDir, gameRomDir, systemRam }) {
+    this.__bootstrapRom = loadRom(bootstrapRomDir);
+    this.__gameRom = loadRom(gameRomDir);
+    this.__systemRam = systemRam;
+  }
+
+  save() {
+    return {
+      bootstrapRomDir: this.bootstrapRomDir,
+      gameRomDir: this.gameRomDir,
+      systemRam: this.__systemRam,
+    };
+  }
+
+  read(address) {
+    if (address > FULL_MMU_SIZE || address < 0) {
+      err('READ OUT OF BOUND FOR MMU ROM', address.toString(16));
+      throw new Error();
+    }
+
+    if (address < 0x100) {
+      return this.__bootstrapRom[address];
+    }
+
+    if (address < 0x8000) {
+      console.log(this.__gameRom[address].toString(16), address.toString(16));
+      return this.__gameRom[address];
+    }
+
+    if (address >= 0x8000) {
+      return this.__systemRam[address - 0x8000];
+    }
+  }
+
+  write(address, data) {
+    if (address < 0x100) {
+      err('WRITING TO ROM ADDRESS NOT ALLOWED', address.toString(16), data);
+      throw new Error();
+    }
+    if (address < 0x8000) {
+      err('WRITING ONTO GAME ROM', address.toString(16), data);
+      throw new Error();
+    }
+    if (address > 0xFFFF) {
+      err('WRITE OUT OF BOUND FOR MMU ROM', address.toString(16));
+      throw new Error();
+    }
+
+    if (address < 0xA000) {
+      log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
+    }
+
+    this.__systemRam[address - 0x8000] = data;
+  }
+}
+module.exports = MMU;

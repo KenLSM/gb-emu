@@ -62,7 +62,7 @@ const main = async () => {
     }
 
     cpuCycle(systemState, memory);
-    await stepper(systemState);
+    // await stepper(systemState);
   }
   log('\n\nHalted:', systemState.toString());
 };

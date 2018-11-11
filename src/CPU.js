@@ -411,6 +411,18 @@ const cpuCycle = (state, { read, write }) => {
         addPC(1);
       }
       break;
+      // LD r8(CELA), L
+    case 0x4D: // LD C, L
+    case 0x5D: // LD E, L
+    case 0x6D: // LD L, L
+    case 0x7D: // LD A, L
+      {
+        const dstR8 = CELA_TABLE[opCode >> 4]; // check UU
+        const srcR8 = 'L';
+        state.setRegister(dstR8, state.getRegister(srcR8));
+        addPC(1);
+      }
+      break;
 
       // LD r8(CELA), A
     case 0x4F: // LD C, A

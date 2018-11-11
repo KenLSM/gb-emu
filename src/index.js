@@ -44,7 +44,7 @@ const M_FREQ = FREQ / SECOND;
 let start = new Date().getTime();
 
 const main = async () => {
-  SaveLoadUtils.load('1541936628537.log', memory, systemState);
+  SaveLoadUtils.load('1541941543186.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 

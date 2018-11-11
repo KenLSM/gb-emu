@@ -79,7 +79,11 @@ const cpuCycle = (state, { read, write }) => {
     // throw new Error();
   }
   switch (opCode) {
-    // Stack Push/pop
+    case 0x00: // no-op
+      addPC(1);
+      break;
+
+      // Stack Push/pop
     case 0xC5: // PUSH BC
     case 0xD5: // PUSH DE
     case 0xE5: // PUSH HL
@@ -241,8 +245,14 @@ const cpuCycle = (state, { read, write }) => {
       {
         const r = signed8(read(PC + 1));
         instLog('JR r');
-        addPC(r);
         addPC(2);
+        addPC(r);
+      }
+      break;
+    case 0xC3: // JR nn
+      {
+        const nn = u16(read(PC + 2), read(PC + 1));
+        setPC(nn);
       }
       break;
 
@@ -387,6 +397,42 @@ const cpuCycle = (state, { read, write }) => {
       }
       break;
 
+      // LD r8(CELA), B
+    case 0x48: // LD C, B
+    case 0x58: // LD E, B
+    case 0x68: // LD L, B
+    case 0x78: // LD A, B
+      {
+        const dstR8 = CELA_TABLE[opCode >> 4]; // check UU
+        const srcR8 = 'B';
+        state.setRegister(dstR8, state.getRegister(srcR8));
+        addPC(1);
+      }
+      break;
+      // LD r8(CELA), C
+    case 0x49: // LD C, C
+    case 0x59: // LD E, C
+    case 0x69: // LD L, C
+    case 0x79: // LD A, C
+      {
+        const dstR8 = CELA_TABLE[opCode >> 4]; // check UU
+        const srcR8 = 'C';
+        state.setRegister(dstR8, state.getRegister(srcR8));
+        addPC(1);
+      }
+      break;
+      // LD r8(CELA), D
+    case 0x4A: // LD C, D
+    case 0x5A: // LD E, D
+    case 0x6A: // LD L, D
+    case 0x7A: // LD A, D
+      {
+        const dstR8 = CELA_TABLE[opCode >> 4]; // check UU
+        const srcR8 = 'D';
+        state.setRegister(dstR8, state.getRegister(srcR8));
+        addPC(1);
+      }
+      break;
       // LD r8(CELA), E
     case 0x4B: // LD C, E
     case 0x5B: // LD E, E
@@ -516,6 +562,7 @@ const cpuCycle = (state, { read, write }) => {
         addPC(2);
       }
       break;
+
     case 0xBE: // CP (HL)
       {
         const HL = state.getRegister('HL');
@@ -527,6 +574,25 @@ const cpuCycle = (state, { read, write }) => {
         state.setFlag('Z', !sub);
         state.setFlag('N', 1);
         state.setFlag('H', didHalfCarry(n, A));
+        state.setFlag('C', C);
+
+        addPC(1);
+      }
+      break;
+      // ADD A, (HL)
+    case 0x86:
+      {
+        const HL = state.getRegister('HL');
+        const v = read(HL);
+        const A = state.getRegister('A');
+        const C = A + v > 0xFF;
+
+        const add = (A + v) & 0xFF;
+        state.setRegister('A', add);
+
+        state.setFlag('Z', !add);
+        state.setFlag('N', 0);
+        state.setFlag('H', didHalfCarry(v, A));
         state.setFlag('C', C);
 
         addPC(1);
@@ -557,7 +623,6 @@ const cpuCycle = (state, { read, write }) => {
         log('r8, A', r8, A);
         log('F', state.getRegister('F').toString(2));
         addPC(1);
-        // throw new Error();
       }
       break;
 

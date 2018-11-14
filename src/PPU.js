@@ -5,28 +5,28 @@
 const LCD_CONTROL_ADDRESS = 0xFF40;
 const SCROLL_Y_ADDRESS = 0xFF42;
 const SCROLL_X_ADDRESS = 0xFF43;
-const WINDOW_TILE_MAP_ADDRESS = [0x9800, 0x9C00];
-const TILE_SET_ADDRESS = [0x8000, 0x8800];
+const WINDOW_BG_CODE_AREA_ADDRESS = [0x9800, 0x9C00];
+const TILE_SET_ADDRESS = [0x8800, 0x8000];
 
 // Map is 32x32
-const ppuCycle = (lcdState, { read }) => {
+const ppuCycle = async (lcdState, { read, __bigRead }, stepper) => {
   const [
-    lcdEnabled,
+    lcdIsEnabled,
     windowTileMapAddress,
-    windowEnable,
-    bgWinTileData,
+    windowIsEnabled,
+    bgWinTileSet,
     bgTileMapAddress,
     objSize,
     objEnable,
     bgEnable,
   ] = read(LCD_CONTROL_ADDRESS).toString(2).padStart(8, 0).split('').map(Number);
 
-  if (!lcdEnabled) { return lcdState; }
+  if (!lcdIsEnabled) { return lcdState; }
   const SC_Y = read(SCROLL_Y_ADDRESS);
   const SC_X = read(SCROLL_X_ADDRESS);
 
-  if (windowEnable) {
-    const mapAddress = WINDOW_TILE_MAP_ADDRESS[windowTileMapAddress];
+  if (windowIsEnabled) {
+    const mapAddress = WINDOW_BG_CODE_AREA_ADDRESS[windowTileMapAddress];
     for (let r = 0; r < 32; r++) {
       for (let c = 0; c < 32; c++) {
         const curTile = read[mapAddress + r * 32 + c];
@@ -38,17 +38,28 @@ const ppuCycle = (lcdState, { read }) => {
       }
     }
   }
-  console.log([
-    lcdEnabled,
+  console.log({
+    lcdIsEnabled,
     windowTileMapAddress,
-    windowEnable,
-    bgWinTileData,
+    windowIsEnabled,
+    bgWinTileSet,
     bgTileMapAddress,
     objSize,
     objEnable,
     bgEnable,
-  ]);
-  throw new Error();
+  });
+  let g = __bigRead(0x9800, 32 * 32).filter(Boolean);
+  console.log(g);
+  g = __bigRead(0x9C00, 32 * 32).filter(Boolean);
+  console.log(g);
+  g = __bigRead(0x8000, 32 * 32).filter(Boolean);
+  console.log(g);
+  g = __bigRead(0x8800, 32 * 32).filter(Boolean);
+  console.log(g);
+  // console.log(g, __bigRead(0x9C00, 32 * 32));
+  await stepper();
+
+  // throw new Error();
 
   return lcdState;
 };

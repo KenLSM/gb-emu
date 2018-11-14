@@ -43,8 +43,11 @@ class MMU {
     this.__bootstrapRom = loadRom(bootstrapRomDir);
     this.__gameRom = loadRom(gameRomDir);
     this.__systemRam = Array(0x8000).fill(0);
+
     this.read = this.read.bind(this);
     this.write = this.write.bind(this);
+
+    this.__bigRead = this.__bigRead.bind(this);
   }
 
   load({ bootstrapRomDir, gameRomDir, systemRam }) {
@@ -60,6 +63,21 @@ class MMU {
       systemRam: this.__systemRam,
     };
   }
+
+  __bigRead(address, length) {
+    if (address < 0x100) {
+      return this.__bootstrapRom.slice(address, length);
+    }
+
+    if (address < 0x8000) {
+      return this.__gameRom.slice(address, length);
+    }
+
+    if (address >= 0x8000) {
+      return this.__systemRam.slice(address - 0x8000, length);
+    }
+  }
+
 
   read(address) {
     if (address > FULL_MMU_SIZE || address < 0) {

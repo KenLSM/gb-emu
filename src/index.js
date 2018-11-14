@@ -47,7 +47,7 @@ const M_FREQ = FREQ / SECOND;
 let start = new Date().getTime();
 
 const main = async () => {
-  SaveLoadUtils.load('1542204200325.log', memory, systemState);
+  // SaveLoadUtils.load('1542204200325.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
@@ -79,8 +79,8 @@ main()
     err('### Crashed ##');
     err('\n\nSTATE DUMP:', systemState.toString());
     err(e);
-    // const fName = `${new Date().getTime()}.log`;
-    // SaveLoadUtils.save(fName, memory, systemState);
+    const fName = `${new Date().getTime()}.log`;
+    SaveLoadUtils.save(fName, memory, systemState);
   })
   .finally(() => {
     log('Ended');

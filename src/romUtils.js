@@ -81,6 +81,7 @@ class MMU {
 
 
   read(address) {
+    if (address === 0xFF4A) { throw new Error() };
     if (address > FULL_MMU_SIZE || address < 0) {
       err('READ OUT OF BOUND FOR MMU ROM', address.toString(16));
       throw new Error();
@@ -116,13 +117,16 @@ class MMU {
 
     if (address < 0xA000) {
       log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
-      throw new Error();
+      // throw new Error();
     }
 
+    // if (address > 0x992F && address < 0xA200) {
+    //   throw new Error();
+    // }
     console.log(address.toString(16), data);
-    this.counter++;
+    // this.counter++;
     this.__systemRam[address - 0x8000] = data;
-    if (this.counter > 10) { throw new Error(); }
+    // if (this.counter > 10) { throw new Error(); }
 
   }
 }

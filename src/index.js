@@ -3,6 +3,8 @@ const MMU = require('./romUtils');
 const SaveLoadUtils = require('./slUtils');
 
 const { cpuCycle } = require('./CPU');
+const { ppuCycle } = require('./PPU');
+const LCD = require('./b').LCD();
 
 const KeyUtils = require('./keypressUtils');
 
@@ -44,7 +46,7 @@ const M_FREQ = FREQ / SECOND;
 let start = new Date().getTime();
 
 const main = async () => {
-  SaveLoadUtils.load('1541941543186.log', memory, systemState);
+  // SaveLoadUtils.load('1541941543186.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
@@ -59,9 +61,11 @@ const main = async () => {
       // setTimeout will cause the process to skip
       await new Promise(p => setTimeout(p, delay)); // eslint-disable-line
       start = now;
+      // LCD.render();
     }
 
     cpuCycle(systemState, memory);
+    ppuCycle(systemState, memory);
     // await stepper(systemState);
   }
   log('\n\nHalted:', systemState.toString());

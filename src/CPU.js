@@ -78,6 +78,10 @@ const cpuCycle = (state, { read, write }) => {
   if (PC === 0xE0) {
     // throw new Error();
   }
+  if (PC === 0x100) {
+    log('0xFF40', read(0xFF40).toString(2).padStart(8, 0));
+    throw new Error();
+  }
   switch (opCode) {
     case 0x00: // no-op
       addPC(1);

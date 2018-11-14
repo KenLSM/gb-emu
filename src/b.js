@@ -1,45 +1,54 @@
-var blessed = require('blessed'),
-  program = blessed.program();
+const blessed = require('blessed');
 
-program.key('q', function(ch, key) {
-  program.clear();
-  program.disableMouse();
-  program.showCursor();
-  program.normalBuffer();
-  process.exit(0);
-});
+const rand = max => Math.floor(Math.random() * max);
+const cols = 160;
+const rows = 144 / 2;
 
-program.on('mouse', function(data) {
-  if (data.action === 'mousemove') {
-    program.move(data.x, data.y);
-    program.bg('red');
-    program.write('x');
-    program.bg('!red');
-  }
-});
+const widthStyle = () => Array(cols).fill(0).map(() => rand(4));
+const lcd = Array(144).fill(cols).map(() => widthStyle());
 
-program.alternateBuffer();
-program.enableMouse();
-program.hideCursor();
-program.clear();
-
-
-const main = async () => {
-  for (let i = 0; i < 160; i++) {
-    program.clear();
-    program.move(i, i);
-    program.bg('black');
-    program.write('Hello world', 'blue fg');
-    program.setx((program.cols / 2 | 0) - 4);
-    program.write(`col ${program.cols}`);
-    program.down(1);
-    program.write(`rows ${program.rows}`);
-    program.down(5);
-    program.write('Hi again!');
-    program.bg('!black');
-    program.feed();
-    await new Promise(p => setTimeout(p, 10));
-  }
+const ColorTable = {
+  0: 'black',
+  1: 'gray',
+  2: 'light gray',
+  3: '#FFFFF0', // hack to get very white
+};
+const OffColorTable = {
+  0: '!black',
+  1: '!gray',
+  2: '!light gray',
+  3: '!#FFFFF0', // hack to get very white
 };
 
-main();
+const block = '▄';
+const block2 = '▄';
+
+const LCD = () => {
+  const program = blessed.program();
+  const row = lcd.length >> 1;
+  const render = lcd => {
+    // program.clear();
+    for (let r = 0; r < row; r++) {
+      const _r = r << 1;
+      const top = lcd[_r];
+      const btm = lcd[_r + 1];
+      for (let c = 0; c < top.length; c += block2.length) {
+        // program.move(c, r);
+        if (c - 1 < 0 || top[c] !== top[c - 1]) {
+          program.bg(ColorTable[top[c]]);
+        }
+        if (c - 1 < 0 || btm[c] !== btm[c - 1]) {
+          program.fg(ColorTable[btm[c]]);
+        }
+
+        program.write(block2);
+      }
+      program.move(0, r);
+    }
+  };
+  return { render: () => render(lcd) };
+};
+
+module.exports = {
+  LCD,
+};

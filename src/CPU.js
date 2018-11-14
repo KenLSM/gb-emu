@@ -497,6 +497,7 @@ const cpuCycle = (state, { read, write }) => {
     case 0xF0: // LDH A,(n) i.e, // LD A, (0xFF00 + n)
       {
         const n = read(PC + 1);
+        instLog('LDH A, (0xFF00 + n)', state.A, n);
         state.A = read(0xFF00 + n);
         addPC(2);
       }

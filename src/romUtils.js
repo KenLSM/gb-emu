@@ -48,6 +48,7 @@ class MMU {
     this.write = this.write.bind(this);
 
     this.__bigRead = this.__bigRead.bind(this);
+    this.counter = 0;
   }
 
   load({ bootstrapRomDir, gameRomDir, systemRam }) {
@@ -115,9 +116,14 @@ class MMU {
 
     if (address < 0xA000) {
       log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
+      throw new Error();
     }
 
+    console.log(address.toString(16), data);
+    this.counter++;
     this.__systemRam[address - 0x8000] = data;
+    if (this.counter > 10) { throw new Error(); }
+
   }
 }
 module.exports = MMU;

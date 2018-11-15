@@ -75,7 +75,10 @@ class MMU {
     }
 
     if (address >= 0x8000) {
-      return this.__systemRam.slice(address - 0x8000, length);
+      const end = address - 0x8000 + length;
+      // console.log('Sending', (address - 0x8000).toString(16), end);
+      // console.log(this.__systemRam.slice(address - 0x8000, end), 'asd')
+      return this.__systemRam.slice(address - 0x8000, end);
     }
   }
 
@@ -117,15 +120,20 @@ class MMU {
 
     if (address < 0xA000) {
       log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
-      // throw new Error();
+      if (address >= 0x9C00) {
+        log('WRITING ON VIDEO MAP! FOUND YOU', address.toString(16), data);
+        throw new Error();
+      }
     }
+
 
     // if (address > 0x992F && address < 0xA200) {
     //   throw new Error();
     // }
-    console.log(address.toString(16), data);
+    // console.log(address.toString(16), data);
     // this.counter++;
     this.__systemRam[address - 0x8000] = data;
+    // console.log(this.__systemRam.length.toString(16), address.toString(16), (address - 0x8000).toString(16), data, this.__systemRam[address - 0x8000])
     // if (this.counter > 10) { throw new Error(); }
 
   }

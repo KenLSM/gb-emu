@@ -29,6 +29,7 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
 
   // console.log(lcdState);
   if (!lcdIsEnabled) { return lcdState; }
+
   const SC_Y = read(SCROLL_Y_ADDRESS);
   const SC_X = read(SCROLL_X_ADDRESS);
 
@@ -42,7 +43,8 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
     objEnable,
     bgEnable,
   });
-  console.log(__bigRead(0x8800, 32 * 32));
+  // throw new Error();
+  // console.log(__bigRead(0x8800, 32 * 32));
   // window render
   if (bgEnable) {
     // Which map to read from
@@ -52,8 +54,8 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
     // console.log(TILE_SET_ADDRESS);
     // const g = __bigRead(tileSetAddress, 32 * 32).filter(Boolean);
     // console.log(g);
-    const g2 = __bigRead(0x9800, 0x800).filter(Boolean);
-    console.log(g2);
+    // const g2 = __bigRead(0x9800, 0x800).filter(Boolean);
+    // console.log(g2);
     // throw new Error();
     // 32 x 32 indexes for window/bg map
     for (let r = 0; r < 32; r++) {
@@ -69,6 +71,7 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
         // if(tileAddress)
         const curTiles = __bigRead(tileAddress, 16);
         // console.log(tileAddress.toString(16), curTiles);
+        // throw new Error();
         // draw tile onto lcd
         for (let tR = 0; tR < 8; tR++) {
           if (curTiles.length === 0) break;

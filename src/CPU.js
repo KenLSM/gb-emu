@@ -76,8 +76,13 @@ const cpuCycle = (state, { read, write }) => {
     write(0xFF44, 0x90); // Faking VBlank, should not do this
   }
   if (PC === 0x000C) {
-    console.log('end');
-    throw new Error();
+    // End of VRAM init
+    // console.log('end');
+    // throw new Error();
+  }
+  if (PC === 0x0055) {
+    // End of Mapping to VRAM for tile
+    // throw new Error();
   }
   if (PC === 0x100) {
     log('0xFF40', read(0xFF40).toString(2).padStart(8, 0));

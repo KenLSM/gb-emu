@@ -35,14 +35,14 @@ const LCD = () => {
       return accum + vv;
     }, 0);
 
-    console.log(gg);
-    if (gg != 0) { throw new Error(); }
+    // console.log(gg);
+    // if (gg != 0) { throw new Error(); }
     // console.log(JSON.stringify(_lcd));
-    return;
+    // return;
     const lcd = [];
     for (let startR = SC_Y; startR < _lcd.length; startR++) {
       lcd[startR - SC_Y] = _lcd[startR].slice(SC_X, cols);
-      console.log(startR, lcd[startR] - SC_Y);
+      // console.log(startR, lcd[startR] - SC_Y);
     }
     const row = lcd.length >> 1;
 

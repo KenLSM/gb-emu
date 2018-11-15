@@ -29,9 +29,30 @@ const systemState = new State();
 const lcdState = initLCD();
 
 const stepper = async state => {
-  while (!keyPressed[0]) {
+  while (!keyPressed[0] || ['u', 'i', 'o', 'p', 'f'].includes(keyPressed[0])) {
+    switch (keyPressed[0]) {
+      case 'u':
+        console.log(JSON.stringify(memory.__bigRead(0x8000, 0x1000)), 'Entries in 0x8000-0x8FFF');
+        break;
+      case 'i':
+        console.log(JSON.stringify(memory.__bigRead(0x8800, 0x1000)), 'Entries in 0x8800-0x97FF');
+        break;
+      case 'o':
+        console.log(JSON.stringify(memory.__bigRead(0x9800, 0x400)), 'Entries in 0x9800-0x9BFF');
+        break;
+      case 'p':
+        console.log(JSON.stringify(memory.__bigRead(0x9C00, 0x400)), 'Entries in 0x9C00-0x9FFF');
+        break;
+      case 'f':
+        console.log(JSON.stringify(memory.__systemRam), JSON.stringify(memory.__systemRam.length), 'Full mem dump');
+        break;
+      default:
+        break;
+    }
+    keyPressed[0] = null;
     await new Promise(p => setTimeout(p, 100)); // eslint-disable-line
   }
+
   keyPressed[0] = null;
   log('State', state.toString());
 };
@@ -47,7 +68,7 @@ const M_FREQ = FREQ / SECOND;
 let start = new Date().getTime();
 
 const main = async () => {
-  // SaveLoadUtils.load('1542204200325.log', memory, systemState);
+  SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
@@ -79,8 +100,8 @@ main()
     err('### Crashed ##');
     err('\n\nSTATE DUMP:', systemState.toString());
     err(e);
-    const fName = `${new Date().getTime()}.log`;
-    SaveLoadUtils.save(fName, memory, systemState);
+    // const fName = `${new Date().getTime()}.log`;
+    // SaveLoadUtils.save(fName, memory, systemState);
   })
   .finally(() => {
     log('Ended');

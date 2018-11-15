@@ -4,7 +4,7 @@ const SaveLoadUtils = require('./slUtils');
 
 const { cpuCycle } = require('./CPU');
 const { ppuCycle, initLCD } = require('./PPU');
-const LCD = require('./b').LCD();
+const LCD = require('./lcd').LCD();
 
 const KeyUtils = require('./keypressUtils');
 
@@ -15,7 +15,8 @@ const {
 const { err, log } = require('./logger');
 
 const BOOTSTRAP_ROM = './roms/DMG_ROM.bin';
-const GAME_ROM = './roms/Tetris.gb';
+const GAME_ROM = './roms/pokemon_blue.gb';
+// const GAME_ROM = './roms/Tetris.gb';
 
 const keyPressed = [null, true];
 KeyUtils.handleKeyPress(keyPressed);
@@ -64,7 +65,7 @@ const M_SECOND = 1;
 const SECOND = M_SECOND * 1000;
 
 const M_FREQ = FREQ / SECOND;
-
+const FPS_60 = 1000;
 let start = new Date().getTime();
 
 const main = async () => {
@@ -78,19 +79,27 @@ const main = async () => {
       const now = new Date().getTime();
       // 8 MHZ
       delay = M_SECOND - (now - start);
-      err('Delay value', delay);
+      // err('Delay value', delay);
 
       // setTimeout will cause the process to skip
       await new Promise(p => setTimeout(p, delay)); // eslint-disable-line
       start = now;
-      // LCD.render(lcdState);
+
       // await stepper(systemState);
+    }
+    if (cycles % FPS_60 === 0) {
+      ppuCycle(lcdState, memory, () => stepper(systemState));
+      await LCD.render(lcdState);
     }
 
     cpuCycle(systemState, memory);
-    await ppuCycle(lcdState, memory, () => stepper(systemState));
-    LCD.render(lcdState);
-    // await stepper(systemState);
+    // LCD.render(lcdState);
+    // Printing PC
+    LCD.printPC('\033[1;31mPC:' + systemState.PC.toString() + '\033[0m');
+    // console.log('\033[1;31m' + systemState.PC.toString() + '\033[0m');
+    if (systemState.PC >= 0x0098) {
+      // await stepper(systemState);
+    }
   }
   log('\n\nHalted:', systemState.toString());
 };
@@ -99,7 +108,7 @@ main()
   .catch(e => {
     err('### Crashed ##');
     err('\n\nSTATE DUMP:', systemState.toString());
-    err(e);
+    err(e.stack);
     // const fName = `${new Date().getTime()}.log`;
     // SaveLoadUtils.save(fName, memory, systemState);
   })

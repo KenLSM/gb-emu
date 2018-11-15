@@ -1,6 +1,7 @@
 // Read memory at 0xFF40
 // Will tell us which tile MAP to look at,
 // Should render or not
+const { instLog } = require('./logger');
 
 const LCD_CONTROL_ADDRESS = 0xFF40;
 const SCROLL_Y_ADDRESS = 0xFF42;
@@ -33,7 +34,7 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
   const SC_Y = read(SCROLL_Y_ADDRESS);
   const SC_X = read(SCROLL_X_ADDRESS);
 
-  console.log({
+  instLog('PPU', 'Flags', {
     lcdIsEnabled,
     windowTileMapAddressSelect,
     windowIsEnabled,
@@ -79,14 +80,25 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
           const btmRow = curTiles[tR * 2 + 1].toString(2).padStart(8, 0).split('').map(Number);
 
           for (let tC = 0; tC < 8; tC++) {
-            lcdState[r * 8 + tR][c * 8 + tC] = topRow[tC] * 2 + btmRow[tC];
-            // console.log('a', topRow[tC] * 2 + btmRow[tC], tC);
+            const val = topRow[tC] * 2 + btmRow[tC];
+            lcdState[r * 8 + tR][c * 8 + tC] = val;
+            // if (val !== 0) {
+            //   instLog('PPU val', val, topRow, btmRow, 'tR', 'tC', tR, tC);
+            //   await stepper();
+            // }
+
+            // console.log('a',
+            //   topRow[tC] * 2 + btmRow[tC],
+            //   tC,
+            //   r * 8 + tR,
+            //   c * 8 + tC,
+            // );
+            // await stepper();
           }
           // console.log('d', lcdState[r * 8 + tR][c * 8]);
         }
       }
     }
-    // throw new Error();
   }
   return { lcd: lcdState, SC_Y, SC_X };
 };

@@ -1,4 +1,4 @@
-const { err } = require('./logger');
+const { instLog, err } = require('./logger');
 
 const BCDEHL_TABLE = ['B', 'C', 'D', 'E', 'H', 'L', 'HL', 'A'];
 const CBArray = ['B', 'C', 'D', 'E', 'H', 'L', 'HL', 'A'];
@@ -59,7 +59,7 @@ const setBit = (whichBit, register, state) => {
 // Main function
 const CB = (opCode, state) => {
   const { UU, LL, uull, uu } = getBitNum(opCode);
-  console.log('CB opCode', opCode.toString(16));
+  instLog('CB opCode', opCode.toString(16));
   // console.log('uull', uull.toString(2));
   switch (UU) {
     case 0x0: // UU == 0 - 3
@@ -70,6 +70,7 @@ const CB = (opCode, state) => {
         // console.log('C', C);
         state.setRegister(r8, (state.getRegister(r8) << 1) | C);
         // console.log('New r8', state.getRegister(r8).toString(2));
+        // throw new Error();
         // console.log('Z', !state.getRegister(r8));
         state.setFlag('Z', !state.getRegister(r8));
         state.setFlag('N', 0);
@@ -88,7 +89,6 @@ const CB = (opCode, state) => {
         return result;
       }
       break;
-
 
     case 0x2: // BIT-RESET // UU == 8-11
 

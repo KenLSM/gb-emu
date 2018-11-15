@@ -99,8 +99,10 @@ const cpuCycle = (state, { read, write }) => {
     case 0xE5: // PUSH HL
     case 0xF5: // PUSH AF
       {
+
         const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
         const [H, L] = u16Tou8(state.getRegister(r16));
+        instLog('PUSH into', r16, H, L);
         write(state.SP - 0, H);
         write(state.SP - 1, L);
         addSP(-2);
@@ -116,10 +118,9 @@ const cpuCycle = (state, { read, write }) => {
         const r16 = BC_DE_HL_TABLE[(opCode >> 4) - 0xC];
         addSP(2);
         const H = read(state.SP - 0);
-        const L = read(state.SP - 0);
+        const L = read(state.SP - 1);
         const HL = u16(H, L);
-        const HL2 = u16(H, L);
-        instLog('POP', HL, HL2);
+        instLog('POP into', r16, HL);
         state.setRegister(r16, HL);
         addPC(1);
       }
@@ -526,7 +527,9 @@ const cpuCycle = (state, { read, write }) => {
     case 0x17: // RLA
       {
         const C = Number((state.A & 0x80) === 0x80);
+        const originalA = state.A;
         state.setRegister('A', (state.A << 1) | state.readF('C'));
+        instLog('RLA', originalA.toString(2).padStart(8, 0), state.A.toString(2).padStart(8, 0));
         state.setFlag('Z', 0);
         state.setFlag('N', 0);
         state.setFlag('H', 0);

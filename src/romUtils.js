@@ -82,9 +82,12 @@ class MMU {
     }
   }
 
-
   read(address) {
-    if (address === 0xFF4A) { throw new Error() };
+    if (address === 0xFF4A) {
+      console.log('romUtils', '0xFF4A');
+      throw new Error();
+    }
+
     if (address > FULL_MMU_SIZE || address < 0) {
       err('READ OUT OF BOUND FOR MMU ROM', address.toString(16));
       throw new Error();
@@ -95,7 +98,7 @@ class MMU {
     }
 
     if (address < 0x8000) {
-      console.log(this.__gameRom[address].toString(16), address.toString(16));
+      // console.log(this.__gameRom[address].toString(16), address.toString(16));
       return this.__gameRom[address];
     }
 
@@ -126,16 +129,7 @@ class MMU {
       }
     }
 
-
-    // if (address > 0x992F && address < 0xA200) {
-    //   throw new Error();
-    // }
-    // console.log(address.toString(16), data);
-    // this.counter++;
     this.__systemRam[address - 0x8000] = data;
-    // console.log(this.__systemRam.length.toString(16), address.toString(16), (address - 0x8000).toString(16), data, this.__systemRam[address - 0x8000])
-    // if (this.counter > 10) { throw new Error(); }
-
   }
 }
 module.exports = MMU;

@@ -28,4 +28,6 @@ state.setRegister('H', 0xFE);
 expect(Ops.CB(0x7c, state)).to.equal(1);
 state.setRegister('H', 0x7F);
 expect(Ops.CB(0x7c, state)).to.equal(0);
+
+expect(Ops.CB(0x11, state)).to.equal(0xF0);
 console.log('Tests OK');

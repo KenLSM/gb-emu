@@ -125,7 +125,7 @@ class MMU {
       log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
       if (address >= 0x9C00) {
         log('WRITING ON VIDEO MAP! FOUND YOU', address.toString(16), data);
-        throw new Error();
+        // throw new Error();
       }
     }
 

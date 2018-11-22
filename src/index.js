@@ -15,8 +15,9 @@ const {
 const { err, log } = require('./logger');
 
 const BOOTSTRAP_ROM = './roms/DMG_ROM.bin';
-const GAME_ROM = './roms/pokemon_blue.gb';
-// const GAME_ROM = './roms/Tetris.gb';
+// const GAME_ROM = './roms/super_mario.gb';
+// const GAME_ROM = './roms/pokemon_blue.gb';
+const GAME_ROM = './roms/Tetris.gb';
 
 const keyPressed = [null, true];
 KeyUtils.handleKeyPress(keyPressed);
@@ -65,11 +66,12 @@ const M_SECOND = 1;
 const SECOND = M_SECOND * 1000;
 
 const M_FREQ = FREQ / SECOND;
-const FPS_60 = 1000;
+const FPS_60 = 1000 * 10;
 let start = new Date().getTime();
 
+let toggle = false;
 const main = async () => {
-  SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
+  // SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
@@ -97,8 +99,10 @@ const main = async () => {
     // Printing PC
     LCD.printPC('\033[1;31mPC:' + systemState.PC.toString() + '\033[0m');
     // console.log('\033[1;31m' + systemState.PC.toString() + '\033[0m');
-    if (systemState.PC >= 0x0098) {
+    if (systemState.PC >= 0x0233 || toggle) {
+      toggle = true;
       // await stepper(systemState);
+      log('\n\nHalted:', systemState.toString());
     }
   }
   log('\n\nHalted:', systemState.toString());

@@ -86,8 +86,19 @@ const cpuCycle = (state, { read, write }) => {
   }
   if (PC === 0x100) {
     log('0xFF40', read(0xFF40).toString(2).padStart(8, 0));
-    throw new Error();
+    // throw new Error();
   }
+
+  // if (PC === 0x1f74) { // Super mario hack
+  //   log('0xFF44', read(0xFF44));
+  //   write(0xFF44, 0x90); // Faking pre VBlank, should not do this
+  // }
+
+  if (PC === 0x0235) { // Tetris hack 
+    log('0xFF44', read(0xFF44));
+    write(0xFF44, 0x94); // Faking pre VBlank, should not do this
+  }
+
   switch (opCode) {
     case 0x00: // no-op
       addPC(1);
@@ -126,6 +137,17 @@ const cpuCycle = (state, { read, write }) => {
       }
       break;
 
+    case 0x02:
+    case 0x12:
+      {
+        const r16 = BC_DE_HL_TABLE[(opCode >> 4)];
+        const targetAddress = state.getRegister(r16);
+        const data = read(targetAddress);
+        state.setRegister('A', data);
+        instLog('LD (BC|DE), A', targetAddress, data);
+        addPC(1);
+      }
+      break;
 
     case 0x08: // LD (nn), SP
       {
@@ -493,7 +515,7 @@ const cpuCycle = (state, { read, write }) => {
       }
       break;
 
-      // Special LD
+      // Special LD, load into high ram
     case 0xE0: // LDH (n), A i.e, // LD (0xFF00 + n), A
       {
         const n = read(PC + 1);
@@ -548,6 +570,7 @@ const cpuCycle = (state, { read, write }) => {
         write(state.SP - 1, L);
         addSP(-2);
         setPC(nn);
+        instLog('Call nn', nn);
       }
       break;
 
@@ -567,12 +590,11 @@ const cpuCycle = (state, { read, write }) => {
         const A = state.getRegister('A');
         const sub = A - n;
         const C = sub < 0; // If n is larger than A, then it will have to borrow the bits from MSB
-        instLog('CP n', n.toString(16));
         state.setFlag('Z', !sub);
         state.setFlag('N', 1);
         state.setFlag('H', didHalfCarry(n, A));
         state.setFlag('C', C);
-
+        instLog('CP n', n.toString(16), 'ZNHC', state.readF('Z'), state.readF('N'), state.readF('C'), state.readF('H'));
         addPC(2);
       }
       break;
@@ -638,6 +660,11 @@ const cpuCycle = (state, { read, write }) => {
         log('F', state.getRegister('F').toString(2));
         addPC(1);
       }
+      break;
+
+      // DI, Disable interrupts
+    case 0xF3:
+      addPC(1);
       break;
 
     default:

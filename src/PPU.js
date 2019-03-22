@@ -3,17 +3,21 @@
 // Should render or not
 const { instLog } = require('./logger');
 
-const LCD_CONTROL_ADDRESS = 0xFF40;
-const SCROLL_Y_ADDRESS = 0xFF42;
-const SCROLL_X_ADDRESS = 0xFF43;
+const LCD_CONTROL_ADDRESS = 0xff40;
+const SCROLL_Y_ADDRESS = 0xff42;
+const SCROLL_X_ADDRESS = 0xff43;
 
 // which address is the window and tile map at?
 // used by windowTileMapAddressSelect & bgTileMapAddressSelect
-const WINDOW_BG_CODE_AREA_ADDRESS = [0x9800, 0x9C00];
+const WINDOW_BG_CODE_AREA_ADDRESS = [0x9800, 0x9c00];
 
 // window and bg tile locations
 // used by bgWinTileSet
 const TILE_SET_ADDRESS = [0x8800, 0x8000];
+const topRow = [];
+const btmRow = [];
+topRow.length = 8;
+btmRow.length = 8;
 
 // Map is 32x32
 const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
@@ -26,10 +30,16 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
     objSize,
     objEnable,
     bgEnable,
-  ] = read(LCD_CONTROL_ADDRESS).toString(2).padStart(8, 0).split('').map(Number);
+  ] = read(LCD_CONTROL_ADDRESS)
+    .toString(2)
+    .padStart(8, 0)
+    .split('')
+    .map(Number);
 
   // console.log(lcdState);
-  if (!lcdIsEnabled) { return lcdState; }
+  if (!lcdIsEnabled) {
+    return lcdState;
+  }
 
   const SC_Y = read(SCROLL_Y_ADDRESS);
   const SC_X = read(SCROLL_X_ADDRESS);
@@ -44,58 +54,54 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
     objEnable,
     bgEnable,
   });
-  // throw new Error();
-  // console.log(__bigRead(0x8800, 32 * 32));
+
   // window render
   if (bgEnable) {
     // Which map to read from
     const mapAddress = WINDOW_BG_CODE_AREA_ADDRESS[windowTileMapAddressSelect];
     const tileSetAddress = TILE_SET_ADDRESS[bgWinTileSet];
-    // console.log(tileSetAddress.toString(16));
-    // console.log(TILE_SET_ADDRESS);
-    // const g = __bigRead(tileSetAddress, 32 * 32).filter(Boolean);
-    // console.log(g);
-    // const g2 = __bigRead(0x9800, 0x800).filter(Boolean);
-    // console.log(g2);
-    // throw new Error();
+
     // 32 x 32 indexes for window/bg map
     for (let r = 0; r < 32; r++) {
       for (let c = 0; c < 32; c++) {
-        // const curTile = read[mapAddress + r << 4 + c];
         // 16 bytes of dataq
-        const tileNumber = read(mapAddress + (r * 32) + c);
-        // console.log(tileNumber);
-
-
+        const tileNumber = read(mapAddress + r * 32 + c);
         const tileAddress = tileSetAddress + tileNumber * 16;
-        // console.log(tileAddress);
-        // if(tileAddress)
         const curTiles = __bigRead(tileAddress, 16);
-        // console.log(tileAddress.toString(16), curTiles);
-        // throw new Error();
+
         // draw tile onto lcd
         for (let tR = 0; tR < 8; tR++) {
           if (curTiles.length === 0) break;
-          const topRow = curTiles[tR * 2].toString(2).padStart(8, 0).split('').map(Number);
-          const btmRow = curTiles[tR * 2 + 1].toString(2).padStart(8, 0).split('').map(Number);
+
+          const tmpCurTiles = curTiles[tR * 2];
+
+          topRow[7 | 0] = tmpCurTiles & 0b1;
+          topRow[6 | 0] = (tmpCurTiles & 0b10) >> 1;
+          topRow[5 | 0] = (tmpCurTiles & 0b100) >> 2;
+          topRow[4 | 0] = (tmpCurTiles & 0b1000) >> 3;
+          topRow[3 | 0] = (tmpCurTiles & 0b10000) >> 4;
+          topRow[2 | 0] = (tmpCurTiles & 0b100000) >> 5;
+          topRow[1 | 0] = (tmpCurTiles & 0b1000000) >> 6;
+          topRow[0 | 0] = (tmpCurTiles & 0b10000000) >> 7;
+
+          const tmpCurTilesB = curTiles[tR * 2 + 1];
+
+          btmRow[7 | 0] = tmpCurTilesB & 0b1;
+          btmRow[6 | 0] = (tmpCurTilesB & 0b10) >> 1;
+          btmRow[5 | 0] = (tmpCurTilesB & 0b100) >> 2;
+          btmRow[4 | 0] = (tmpCurTilesB & 0b1000) >> 3;
+          btmRow[3 | 0] = (tmpCurTilesB & 0b10000) >> 4;
+          btmRow[2 | 0] = (tmpCurTilesB & 0b100000) >> 5;
+          btmRow[1 | 0] = (tmpCurTilesB & 0b1000000) >> 6;
+          btmRow[0 | 0] = (tmpCurTilesB & 0b10000000) >> 7;
+
+          // topRow = curTiles[tR * 2].toString(2).padStart(8, 0).split('').map(Number);
+          // btmRow = curTiles[tR * 2 + 1].toString(2).padStart(8, 0).split('').map(Number);
 
           for (let tC = 0; tC < 8; tC++) {
             const val = topRow[tC] * 2 + btmRow[tC];
             lcdState[r * 8 + tR][c * 8 + tC] = val;
-            // if (val !== 0) {
-            //   instLog('PPU val', val, topRow, btmRow, 'tR', 'tC', tR, tC);
-            //   await stepper();
-            // }
-
-            // console.log('a',
-            //   topRow[tC] * 2 + btmRow[tC],
-            //   tC,
-            //   r * 8 + tR,
-            //   c * 8 + tC,
-            // );
-            // await stepper();
           }
-          // console.log('d', lcdState[r * 8 + tR][c * 8]);
         }
       }
     }

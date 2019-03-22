@@ -8,9 +8,7 @@ const LCD = require('./lcd').LCD();
 
 const KeyUtils = require('./keypressUtils');
 
-const {
-  State,
-} = require('./state');
+const { State } = require('./state');
 
 const { err, log } = require('./logger');
 
@@ -24,7 +22,6 @@ KeyUtils.handleKeyPress(keyPressed);
 const memory = new MMU(BOOTSTRAP_ROM, GAME_ROM);
 // const memory = RomUtils.loadBootstrapRom(BOOTSTRAP_ROM);
 // RomUtils.loadGameRom(memory, GAME_ROM);
-
 
 const systemState = new State();
 const lcdState = initLCD();
@@ -42,10 +39,14 @@ const stepper = async state => {
         console.log(JSON.stringify(memory.__bigRead(0x9800, 0x400)), 'Entries in 0x9800-0x9BFF');
         break;
       case 'p':
-        console.log(JSON.stringify(memory.__bigRead(0x9C00, 0x400)), 'Entries in 0x9C00-0x9FFF');
+        console.log(JSON.stringify(memory.__bigRead(0x9c00, 0x400)), 'Entries in 0x9C00-0x9FFF');
         break;
       case 'f':
-        console.log(JSON.stringify(memory.__systemRam), JSON.stringify(memory.__systemRam.length), 'Full mem dump');
+        console.log(
+          JSON.stringify(memory.__systemRam),
+          JSON.stringify(memory.__systemRam.length),
+          'Full mem dump',
+        );
         break;
       default:
         break;
@@ -67,7 +68,7 @@ const SECOND = M_SECOND * 1000;
 const M_FREQ = FREQ / SECOND;
 const FPS_60 = 1000;
 let start = new Date().getTime();
-
+const begin = new Date().getTime();
 const main = async () => {
   SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
   while (keyPressed[1]) {
@@ -114,5 +115,10 @@ main()
   })
   .finally(() => {
     log('Ended');
+
+    const timeTaken = (new Date().getTime() - begin) / 1000;
+    const avgFreq = cycles / timeTaken;
+    console.log(`${avgFreq}Hz`, cycles, 'cycles', 'took', `${timeTaken}s`);
+
     process.exit();
   });

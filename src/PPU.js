@@ -95,9 +95,6 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
           btmRow[1 | 0] = (tmpCurTilesB & 0b1000000) >> 6;
           btmRow[0 | 0] = (tmpCurTilesB & 0b10000000) >> 7;
 
-          // topRow = curTiles[tR * 2].toString(2).padStart(8, 0).split('').map(Number);
-          // btmRow = curTiles[tR * 2 + 1].toString(2).padStart(8, 0).split('').map(Number);
-
           for (let tC = 0; tC < 8; tC++) {
             const val = topRow[tC] * 2 + btmRow[tC];
             lcdState[r * 8 + tR][c * 8 + tC] = val;

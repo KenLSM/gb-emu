@@ -21,20 +21,16 @@ btmRow.length = 8;
 
 // Map is 32x32
 const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
-  const [
-    lcdIsEnabled,
-    windowTileMapAddressSelect,
-    windowIsEnabled,
-    bgWinTileSet,
-    bgTileMapAddressSelect,
-    objSize,
-    objEnable,
-    bgEnable,
-  ] = read(LCD_CONTROL_ADDRESS)
-    .toString(2)
-    .padStart(8, 0)
-    .split('')
-    .map(Number);
+  const lcdFlags = read(LCD_CONTROL_ADDRESS);
+
+  const bgEnable = lcdFlags & 0b1;
+  const objEnable = (lcdFlags & 0b10) >> 1;
+  const objSize = (lcdFlags & 0b100) >> 2;
+  const bgTileMapAddressSelect = (lcdFlags & 0b1000) >> 3;
+  const bgWinTileSet = (lcdFlags & 0b10000) >> 4;
+  const windowIsEnabled = (lcdFlags & 0b100000) >> 5;
+  const windowTileMapAddressSelect = (lcdFlags & 0b1000000) >> 6;
+  const lcdIsEnabled = (lcdFlags & 0b10000000) >> 7;
 
   // console.log(lcdState);
   if (!lcdIsEnabled) {
@@ -44,16 +40,16 @@ const ppuCycle = async ({ lcd: lcdState }, { read, __bigRead }, stepper) => {
   const SC_Y = read(SCROLL_Y_ADDRESS);
   const SC_X = read(SCROLL_X_ADDRESS);
 
-  instLog('PPU', 'Flags', {
-    lcdIsEnabled,
-    windowTileMapAddressSelect,
-    windowIsEnabled,
-    bgWinTileSet,
-    bgTileMapAddressSelect,
-    objSize,
-    objEnable,
-    bgEnable,
-  });
+  // instLog('PPU', 'Flags', {
+  //   lcdIsEnabled,
+  //   windowTileMapAddressSelect,
+  //   windowIsEnabled,
+  //   bgWinTileSet,
+  //   bgTileMapAddressSelect,
+  //   objSize,
+  //   objEnable,
+  //   bgEnable,
+  // });
 
   // window render
   if (bgEnable) {

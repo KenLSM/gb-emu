@@ -13,8 +13,8 @@ const { State } = require('./state');
 const { err, log } = require('./logger');
 
 const BOOTSTRAP_ROM = './roms/DMG_ROM.bin';
-const GAME_ROM = './roms/pokemon_blue.gb';
-// const GAME_ROM = './roms/Tetris.gb';
+// const GAME_ROM = './roms/pokemon_blue.gb';
+const GAME_ROM = './roms/Tetris.gb';
 
 const keyPressed = [null, true];
 KeyUtils.handleKeyPress(keyPressed);
@@ -70,13 +70,13 @@ const FPS_60 = 1000;
 let start = new Date().getTime();
 const begin = new Date().getTime();
 const main = async () => {
-  SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
+  // SaveLoadUtils.load('post_rom_clear.log', memory, systemState);
   while (keyPressed[1]) {
     cycles += 1;
 
     // This is pause is required to allow keyboard event loop to have a chance of executing
     // However, this will add an additional ~16ms of delay per pause
-    if (cycles % M_FREQ === 0) {
+    if (cycles % M_FREQ === 0 && false) {
       const now = new Date().getTime();
       // 8 MHZ
       delay = M_SECOND - (now - start);
@@ -92,11 +92,11 @@ const main = async () => {
       ppuCycle(lcdState, memory, () => stepper(systemState));
       await LCD.render(lcdState);
     }
-
+    // ppuCycle(lcdState, memory, () => stepper(systemState));
     cpuCycle(systemState, memory);
     // LCD.render(lcdState);
     // Printing PC
-    LCD.printPC('\033[1;31mPC:' + systemState.PC.toString() + '\033[0m');
+    // LCD.printPC('\033[1;31mPC:' + systemState.PC.toString() + '\033[0m');
     // console.log('\033[1;31m' + systemState.PC.toString() + '\033[0m');
     if (systemState.PC >= 0x0098) {
       // await stepper(systemState);

@@ -4,7 +4,7 @@ const { log, err } = require('./logger');
 const VRAM_SIZE = 0x2000;
 const ERAM_SIZE = 0x2000;
 const RAM_SIZE = 0x2000;
-const FULL_MMU_SIZE = 0xFFFF;
+const FULL_MMU_SIZE = 0xffff;
 
 const parseRom = data => {
   const d = data.toString('hex');
@@ -18,15 +18,20 @@ const parseRom = data => {
 const printRom = (rom, init = 0) => {
   for (let i = init; i < rom.length; i += 8) {
     const lineNum = String(i).padStart(4);
-    log(lineNum,
+    log(
+      lineNum,
       rom.slice(i, i + 2).join(''),
       rom.slice(i + 2, i + 4).join(''),
       rom.slice(i + 4, i + 6).join(''),
-      rom.slice(i + 6, i + 8).join(''));
+      rom.slice(i + 6, i + 8).join(''),
+    );
   }
 };
 
-const padRom = (romData, padding) => Array(padding).fill(0).concat(romData);
+const padRom = (romData, padding) =>
+  Array(padding)
+    .fill(0)
+    .concat(romData);
 
 const loadRom = fileName => {
   console.log(fileName);
@@ -83,7 +88,7 @@ class MMU {
   }
 
   read(address) {
-    if (address === 0xFF4A) {
+    if (address === 0xff4a) {
       console.log('romUtils', '0xFF4A');
       throw new Error();
     }
@@ -116,16 +121,16 @@ class MMU {
       err('WRITING ONTO GAME ROM', address.toString(16), data);
       throw new Error();
     }
-    if (address > 0xFFFF) {
+    if (address > 0xffff) {
       err('WRITE OUT OF BOUND FOR MMU ROM', address.toString(16));
       throw new Error();
     }
 
-    if (address < 0xA000) {
-      log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
-      if (address >= 0x9C00) {
-        log('WRITING ON VIDEO MAP! FOUND YOU', address.toString(16), data);
-        throw new Error();
+    if (address < 0xa000) {
+      // log('WRITING ONTO VIDEO RAM, DISPLAY NOT YET IMPLEMENTED', address.toString(16), data);
+      if (address >= 0x9c00) {
+        // log('WRITING ON VIDEO MAP! FOUND YOU', address.toString(16), data);
+        // throw new Error();
       }
     }
 

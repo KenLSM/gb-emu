@@ -37,7 +37,7 @@ class State {
     switch (symbol) {
       case 'A':
         this.A ^= source;
-        this.A &= 0xFF;
+        this.A &= 0xff;
         break;
       default:
         err('Unexpected symbol:', symbol);
@@ -68,28 +68,28 @@ class State {
           this.F |= 0x80;
           break;
         }
-        this.F &= 0x7F;
+        this.F &= 0x7f;
         break;
       case 'N':
         if (val) {
           this.F |= 0x40;
           break;
         }
-        this.F &= 0xBF;
+        this.F &= 0xbf;
         break;
       case 'H':
         if (val) {
           this.F |= 0x20;
           break;
         }
-        this.F &= 0xDF;
+        this.F &= 0xdf;
         break;
       case 'C':
         if (val) {
           this.F |= 0x10;
           break;
         }
-        this.F &= 0xEF;
+        this.F &= 0xef;
         break;
       default:
         err('Unknown setFlag:', symbol, val);
@@ -100,16 +100,16 @@ class State {
   readFByOpCode(opCode) {
     switch (opCode) {
       case 0x20:
-      case 0xC2:
+      case 0xc2:
         return !this.readF('Z');
-      case 0xCA:
+      case 0xca:
       case 0x28:
         return this.readF('Z');
       case 0x30:
-      case 0xD2:
+      case 0xd2:
         return !this.readF('C');
       case 0x38:
-      case 0xDA:
+      case 0xda:
         return this.readF('C');
       default:
         err('Unknown readFByOpCode:', opCode.toString(16));
@@ -118,48 +118,71 @@ class State {
   }
 
   getRegister(r) {
-    if (['HL', 'BC', 'DE'].includes(r)) {
-      const [left, right] = r.split('');
-      return u16(this[left], this[right]);
+    // if (['HL', 'BC', 'DE'].includes(r)) {
+    switch (r) {
+      case 'HL':
+      case 'BC':
+      case 'DE': {
+        const left = r.charAt(0);
+        const right = r.charAt(1);
+        return u16(this[left], this[right]);
+      }
+      default:
+        return this[r];
     }
-    return this[r];
+    // const [left, right] = r.split('');
   }
 
   setRegister(r, v) {
-    if (['B', 'C', 'D', 'E', 'H', 'L', 'A', 'HL', 'BC', 'DE'].includes(r) === false) {
-      err('Attemping to set non-existing register on state', r, v);
-      throw new Error();
+    // if (['B', 'C', 'D', 'E', 'H', 'L', 'A', 'HL', 'BC', 'DE'].includes(r) === false) {
+    //   err('Attemping to set non-existing register on state', r, v);
+    //   throw new Error();
+    // }
+    switch (r) {
+      case 'HL':
+      case 'BC':
+      case 'DE': {
+        const left = r.charAt(0);
+        const right = r.charAt(1);
+        const [leftV, rightV] = u16Tou8(v & 0xffff);
+        this[left] = leftV;
+        this[right] = rightV;
+        return this.getRegister(r);
+      }
+      default:
+        this[r] = v & 0xff;
+        return this.getRegister(r);
     }
-    if (['HL', 'BC', 'DE'].includes(r)) {
-      const [left, right] = r.split('');
-      const [leftV, rightV] = u16Tou8(v & 0xFFFF);
-      this[left] = leftV;
-      this[right] = rightV;
-      return this.getRegister(r);
-    }
-    this[r] = v & 0xFF;
-    return this.getRegister(r);
+    // if (['HL', 'BC', 'DE'].includes(r)) {
+    // const [left, right] = r.split('');
+    //   const left = r.charAt(0);
+    //   const right = r.charAt(1);
+    //   const [leftV, rightV] = u16Tou8(v & 0xffff);
+    //   this[left] = leftV;
+    //   this[right] = rightV;
+    //   return this.getRegister(r);
+    // }
   }
 
   setSP(val) {
     this.SP = val;
-    this.SP &= 0xFFFF;
+    this.SP &= 0xffff;
   }
 
   addSP(val) {
     this.SP += val;
-    this.SP &= 0xFFFF;
+    this.SP &= 0xffff;
   }
 
   setPC(val) {
     this.PC = val;
-    this.PC &= 0xFFFF;
+    this.PC &= 0xffff;
   }
 
   addPC(val) {
     this.PC += val;
-    log('ADD PC:', val, 'CUR_PC:', this.PC.toString(16));
-    this.PC &= 0xFFFF;
+    // log('ADD PC:', val, 'CUR_PC:', this.PC.toString(16));
+    this.PC &= 0xffff;
   }
 
   toString() {
